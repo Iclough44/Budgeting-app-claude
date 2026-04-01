@@ -52,11 +52,11 @@
       z-index: 100;
     }
 
-    .logo { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; flex-shrink: 0; }
+    .logo { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; flex-shrink: 0; order: 1; }
     .logo span { opacity: 0.6; font-weight: 400; font-size: 0.85rem; margin-left: 4px; }
 
     /* Tab nav — grows to fill space between logo and month nav */
-    .tab-nav { display: flex; gap: 0.25rem; flex: 1; justify-content: center; }
+    .tab-nav { display: flex; gap: 0.25rem; flex: 1; justify-content: center; order: 2; }
     .tab-btn {
       padding: 0.35rem 1rem;
       background: rgba(255,255,255,0.12);
@@ -72,7 +72,7 @@
     .tab-btn.active { background: rgba(255,255,255,0.95); color: var(--primary); font-weight: 600; }
 
     /* Month navigator */
-    .month-nav { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+    .month-nav { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; order: 3; }
     .month-nav button {
       width: 30px; height: 30px;
       background: rgba(255,255,255,0.18);
@@ -515,15 +515,18 @@
       header {
         height: auto;
         flex-wrap: wrap;
+        align-items: center;
         padding: 0.55rem 1rem 0;
-        gap: 0.5rem;
+        gap: 0.4rem;
       }
-      .logo       { flex: 1; font-size: 1.1rem; }
-      .logo span  { display: none; }
-      .month-nav  { flex-shrink: 0; }
+      /* Row 1: logo (left) + month-nav (right) */
+      .logo      { order: 1; flex: 1; font-size: 1.1rem; }
+      .logo span { display: none; }
+      .month-nav { order: 2; flex-shrink: 0; }
+      /* Row 2: tabs full width */
       .tab-nav {
-        width: 100%;
-        flex: none;
+        order: 3;
+        flex: 0 0 100%;
         justify-content: stretch;
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -1142,9 +1145,7 @@ function renderGoals(){
     document.getElementById('inc-bar-note').textContent  = 'Enter your income above to see the comparison';
   }
 
-  const spend = catSpend();
   const totalBudgeted = EXP_CATS.reduce((s,c)=>s+(data.budgets[c.name]||0),0);
-  const totalSpent    = Object.values(spend).reduce((s,v)=>s+v,0);
   const overCount     = EXP_CATS.filter(c=>data.budgets[c.name]>0&&(spend[c.name]||0)>data.budgets[c.name]).length;
 
   document.getElementById('g-budgeted').textContent  = fmtShort(totalBudgeted);
