@@ -494,22 +494,78 @@
     .income-strip-fill { height: 100%; border-radius: 5px; transition: width 0.4s ease; }
     .income-strip-sub  { font-size: 0.72rem; color: var(--muted); }
 
-    /* Responsive */
+    /* ─── iOS: prevent zoom on input focus (font-size must be ≥16px) ─── */
+    input, select, textarea { font-size: 16px !important; }
+
+    /* ─── Minimum tap target size ─── */
+    .btn-add, .gc-save, .freq-btn, .type-toggle button { min-height: 44px; }
+    .cat-opt, .fpill, .tab-btn { min-height: 44px; display: flex; align-items: center; justify-content: center; }
+    .btn-del { min-height: 40px; min-width: 40px; display: flex; align-items: center; justify-content: center; }
+
+    /* ─── Responsive ─── */
     @media (max-width: 900px) {
       .income-controls { grid-template-columns: 1fr 1fr; }
-    }
       .dash-grid       { grid-template-columns: 1fr; }
       .tx-layout       { grid-template-columns: 1fr; }
       .goals-grid      { grid-template-columns: repeat(2, 1fr); }
       .goals-summary   { grid-template-columns: repeat(2, 1fr); }
     }
+
     @media (max-width: 600px) {
-      header           { padding: 0 1rem; }
-      .page            { padding: 1rem 1rem 2rem; }
-      .summary-row     { grid-template-columns: 1fr; }
-      .goals-grid      { grid-template-columns: 1fr; }
-      .goals-summary   { grid-template-columns: repeat(2, 1fr); }
-      .logo span       { display: none; }
+      /* Header: stack tabs below logo+month row */
+      header {
+        height: auto;
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.6rem 1rem 0;
+      }
+      .header-left {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        padding-bottom: 0.55rem;
+      }
+      .logo span { display: none; }
+      .tab-nav {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.3rem;
+        padding-bottom: 0.6rem;
+      }
+      .tab-btn { font-size: 0.78rem; padding: 0.5rem 0.3rem; }
+
+      /* Page */
+      .page { padding: 0.9rem 0.85rem 4rem; }
+
+      /* Summary: 3 compact cards in a row */
+      .summary-row { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+      .card        { padding: 0.75rem 0.6rem; }
+      .card-value  { font-size: 1.05rem; }
+      .card-label  { font-size: 0.6rem; }
+      .card-sub    { font-size: 0.62rem; }
+
+      /* Income card */
+      .income-controls   { grid-template-columns: 1fr; gap: 0.9rem; }
+      .income-card       { padding: 1rem; }
+      .income-monthly-val { font-size: 1.4rem; }
+
+      /* Goals */
+      .goals-grid    { grid-template-columns: 1fr; }
+      .goals-summary { grid-template-columns: repeat(2, 1fr); }
+
+      /* Category picker: 3 columns */
+      .cat-grid { grid-template-columns: repeat(3, 1fr); }
+      .cat-opt  { padding: 0.55rem 0.4rem; font-size: 0.72rem; }
+
+      /* Form inputs */
+      .frow input { padding: 0.75rem 0.85rem; }
+      .btn-add    { padding: 0.85rem; }
+
+      /* Month nav */
+      #month-display { font-size: 0.82rem; min-width: 110px; }
+      .month-nav button { width: 34px; height: 34px; }
     }
   </style>
 </head>
