@@ -962,7 +962,7 @@ async function loadData() {
     supa.from('settings').select('*').eq('user_id', uid).maybeSingle()
   ]);
   data.transactions = (txRes.data || []).map(t => ({
-    id: t.id, desc: t.desc, amount: Number(t.amount),
+    id: t.id, desc: t.description, amount: Number(t.amount),
     type: t.type, category: t.category, date: t.date
   }));
   data.budgets = {}; data.notes = {};
@@ -1069,7 +1069,7 @@ async function addTransaction(){
   if(!date)             { alert('Please select a date.'); return; }
   if(!selCat)           { alert('Please select a category.'); return; }
   const { data: inserted, error } = await supa.from('transactions')
-    .insert({ user_id: currentUser.id, desc, amount, type: selType, category: selCat, date })
+    .insert({ user_id: currentUser.id, description: desc, amount, type: selType, category: selCat, date })
     .select().single();
   if (error) { alert('Error saving: ' + error.message); return; }
   data.transactions.unshift({ id: inserted.id, desc, amount, type: selType, category: selCat, date });
