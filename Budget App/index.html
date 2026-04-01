@@ -45,19 +45,18 @@
       height: 60px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 1rem;
       box-shadow: 0 2px 12px rgba(99,102,241,0.35);
       position: sticky;
       top: 0;
       z-index: 100;
     }
 
-    .header-left { display: flex; align-items: center; gap: 1rem; }
-    .logo { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; }
+    .logo { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; flex-shrink: 0; }
     .logo span { opacity: 0.6; font-weight: 400; font-size: 0.85rem; margin-left: 4px; }
 
-    /* Tab nav inside header */
-    .tab-nav { display: flex; gap: 0.25rem; }
+    /* Tab nav — grows to fill space between logo and month nav */
+    .tab-nav { display: flex; gap: 0.25rem; flex: 1; justify-content: center; }
     .tab-btn {
       padding: 0.35rem 1rem;
       background: rgba(255,255,255,0.12);
@@ -73,17 +72,17 @@
     .tab-btn.active { background: rgba(255,255,255,0.95); color: var(--primary); font-weight: 600; }
 
     /* Month navigator */
-    .month-nav { display: flex; align-items: center; gap: 0.6rem; }
+    .month-nav { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
     .month-nav button {
-      width: 28px; height: 28px;
+      width: 30px; height: 30px;
       background: rgba(255,255,255,0.18);
       border: none; color: #fff; border-radius: 50%;
-      cursor: pointer; font-size: 0.85rem;
+      cursor: pointer; font-size: 0.9rem;
       display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s;
+      transition: background 0.15s; flex-shrink: 0;
     }
     .month-nav button:hover { background: rgba(255,255,255,0.32); }
-    #month-display { font-weight: 600; font-size: 0.9rem; min-width: 140px; text-align: center; }
+    #month-display { font-weight: 600; font-size: 0.88rem; min-width: 130px; text-align: center; }
 
     /* ─── Tabs ─── */
     .tab-panel { display: none; }
@@ -512,29 +511,30 @@
     }
 
     @media (max-width: 600px) {
-      /* Header: stack tabs below logo+month row */
+      /* Header: logo + month-nav on top row, tabs wrap below */
       header {
         height: auto;
-        flex-direction: column;
-        align-items: stretch;
-        padding: 0.6rem 1rem 0;
+        flex-wrap: wrap;
+        padding: 0.55rem 1rem 0;
+        gap: 0.5rem;
       }
-      .header-left {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-        padding-bottom: 0.55rem;
-      }
-      .logo span { display: none; }
+      .logo       { flex: 1; font-size: 1.1rem; }
+      .logo span  { display: none; }
+      .month-nav  { flex-shrink: 0; }
       .tab-nav {
         width: 100%;
+        flex: none;
+        justify-content: stretch;
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 0.3rem;
-        padding-bottom: 0.6rem;
+        padding-bottom: 0.55rem;
       }
-      .tab-btn { font-size: 0.78rem; padding: 0.5rem 0.3rem; }
+      .tab-btn { font-size: 0.78rem; padding: 0.5rem 0.25rem; min-height: 40px; }
+
+      /* Month nav */
+      #month-display        { font-size: 0.8rem; min-width: 100px; }
+      .month-nav button     { width: 32px; height: 32px; }
 
       /* Page */
       .page { padding: 0.9rem 0.85rem 4rem; }
@@ -547,8 +547,8 @@
       .card-sub    { font-size: 0.62rem; }
 
       /* Income card */
-      .income-controls   { grid-template-columns: 1fr; gap: 0.9rem; }
-      .income-card       { padding: 1rem; }
+      .income-controls    { grid-template-columns: 1fr; gap: 0.9rem; }
+      .income-card        { padding: 1rem; }
       .income-monthly-val { font-size: 1.4rem; }
 
       /* Goals */
@@ -562,10 +562,6 @@
       /* Form inputs */
       .frow input { padding: 0.75rem 0.85rem; }
       .btn-add    { padding: 0.85rem; }
-
-      /* Month nav */
-      #month-display { font-size: 0.82rem; min-width: 110px; }
-      .month-nav button { width: 34px; height: 34px; }
     }
   </style>
 </head>
@@ -573,14 +569,12 @@
 
 <!-- ─── Header ─── -->
 <header>
-  <div class="header-left">
-    <div class="logo">💰 BudgetApp <span>Personal Finance</span></div>
-    <nav class="tab-nav">
-      <button class="tab-btn active" onclick="showTab('dashboard')">📊 Dashboard</button>
-      <button class="tab-btn"        onclick="showTab('transactions')">💳 Transactions</button>
-      <button class="tab-btn"        onclick="showTab('goals')">🎯 Goals</button>
-    </nav>
-  </div>
+  <div class="logo">💰 BudgetApp <span>Personal Finance</span></div>
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="showTab('dashboard', this)">📊 Dashboard</button>
+    <button class="tab-btn"        onclick="showTab('transactions', this)">💳 Transactions</button>
+    <button class="tab-btn"        onclick="showTab('goals', this)">🎯 Goals</button>
+  </nav>
   <div class="month-nav">
     <button onclick="changeMonth(-1)">&#8592;</button>
     <span id="month-display"></span>
@@ -867,12 +861,12 @@ function catSpend(){
 }
 
 // ── Tab switching ─────────────────────────────────────────────
-function showTab(name){
+function showTab(name, btn){
   activeTab = name;
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
-  event.currentTarget.classList.add('active');
+  if(btn) btn.classList.add('active');
   render();
 }
 
