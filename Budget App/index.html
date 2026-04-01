@@ -12,6 +12,7 @@
   <meta name="apple-mobile-web-app-title" content="Budget Now" />
   <link rel="apple-touch-icon" href="icon.png" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     :root {
       --bg:        #080814;
@@ -520,6 +521,101 @@
     }
     .gc-note:focus { border-color: rgba(124,58,237,0.5); color: var(--text); }
 
+    /* ─── Auth Overlay ─── */
+    #auth-overlay {
+      position: fixed; inset: 0;
+      background: rgba(8,8,20,0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    #auth-modal {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 2.5rem;
+      width: min(400px, 90vw);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(124,58,237,0.2);
+    }
+    #auth-logo {
+      font-size: 1.6rem; font-weight: 900;
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-align: center; margin-bottom: 0.4rem;
+    }
+    #auth-tagline {
+      text-align: center; font-size: 0.8rem;
+      color: var(--muted); margin-bottom: 1.75rem;
+    }
+    #auth-tabs {
+      display: flex; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px; padding: 3px; margin-bottom: 1.5rem;
+    }
+    .auth-tab {
+      flex: 1; padding: 0.5rem; border: none;
+      background: transparent; border-radius: 9px;
+      cursor: pointer; font-size: 0.85rem; font-weight: 700;
+      color: var(--muted); transition: all 0.2s; min-height: 40px;
+    }
+    .auth-tab.active {
+      background: linear-gradient(135deg, rgba(124,58,237,0.4), rgba(6,214,208,0.25));
+      color: #fff;
+    }
+    .auth-input {
+      width: 100%; padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; color: var(--text);
+      font-size: 16px; font-family: inherit; outline: none;
+      margin-bottom: 0.85rem; display: block;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .auth-input:focus {
+      border-color: rgba(124,58,237,0.6);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+    }
+    .auth-input::placeholder { color: var(--muted); }
+    .auth-btn {
+      width: 100%; padding: 0.85rem;
+      background: var(--grad); color: #fff;
+      border: none; border-radius: 12px;
+      font-size: 0.95rem; font-weight: 800;
+      cursor: pointer; transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+      min-height: 50px;
+    }
+    .auth-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(124,58,237,0.5); }
+    .auth-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    #auth-message {
+      font-size: 0.8rem; margin-top: 0.75rem;
+      text-align: center; min-height: 1.2em; color: var(--expense);
+    }
+    #auth-message.success { color: var(--income); }
+
+    /* ─── User display in header ─── */
+    .user-display {
+      display: flex; align-items: center; gap: 0.5rem;
+      flex-shrink: 0; order: 4;
+    }
+    #user-email {
+      font-size: 0.72rem; color: var(--muted);
+      max-width: 130px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .btn-logout {
+      padding: 0.3rem 0.65rem;
+      background: rgba(255,77,109,0.12);
+      border: 1px solid rgba(255,77,109,0.25);
+      color: var(--expense); border-radius: 8px;
+      font-size: 0.72rem; font-weight: 700;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .btn-logout:hover { background: rgba(255,77,109,0.22); }
+
     /* ─── iOS: prevent zoom ─── */
     input, select, textarea { font-size: 16px !important; }
 
@@ -533,6 +629,12 @@
       .tx-layout       { grid-template-columns: 1fr; }
       .goals-grid      { grid-template-columns: repeat(2,1fr); }
       .goals-summary   { grid-template-columns: repeat(2,1fr); }
+    }
+
+    @media (max-width: 600px) {
+      .user-display { order: 4; }
+      #user-email   { display: none; }
+      .btn-logout   { font-size: 0.68rem; padding: 0.25rem 0.5rem; }
     }
 
     @media (max-width: 600px) {
@@ -572,6 +674,22 @@
 </head>
 <body>
 
+<!-- ─── Auth Overlay ─── -->
+<div id="auth-overlay">
+  <div id="auth-modal">
+    <div id="auth-logo">⚡ Budget Now</div>
+    <div id="auth-tagline">Your personal finance tracker</div>
+    <div id="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login',this)">Sign In</button>
+      <button class="auth-tab"        onclick="switchAuthTab('signup',this)">Sign Up</button>
+    </div>
+    <input id="auth-email"    class="auth-input" type="email"    placeholder="Email address"  autocomplete="email" />
+    <input id="auth-password" class="auth-input" type="password" placeholder="Password"       autocomplete="current-password" />
+    <button class="auth-btn" id="auth-submit" onclick="submitAuth()">Sign In</button>
+    <div id="auth-message"></div>
+  </div>
+</div>
+
 <!-- ─── Header ─── -->
 <header>
   <div class="logo">⚡ Budget Now <span>Personal Finance</span></div>
@@ -584,6 +702,10 @@
     <button onclick="changeMonth(-1)">&#8592;</button>
     <span id="month-display"></span>
     <button onclick="changeMonth(1)">&#8594;</button>
+  </div>
+  <div class="user-display">
+    <span id="user-email"></span>
+    <button class="btn-logout" onclick="logout()">Sign Out</button>
   </div>
 </header>
 
@@ -762,6 +884,97 @@
 </div>
 
 <script>
+// ── Supabase ──────────────────────────────────────────────────
+const SUPA_URL = 'https://jjfwunctarjrybilxalp.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqZnd1bmN0YXJqcnliaWx4YWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwODA2NTQsImV4cCI6MjA5MDY1NjY1NH0.lC607PLM-kDM8TeufiKiegmDok2vEiO_JjWOEoRIE7g';
+const supa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let currentUser = null;
+let authMode = 'login';
+
+// ── Auth ──────────────────────────────────────────────────────
+async function initAuth() {
+  const { data: { session } } = await supa.auth.getSession();
+  if (session) { currentUser = session.user; await showApp(); }
+  else showAuthOverlay();
+
+  supa.auth.onAuthStateChange(async (event, session) => {
+    if (session && !currentUser) { currentUser = session.user; await showApp(); }
+    else if (!session) {
+      currentUser = null;
+      data = { transactions:[], budgets:{}, notes:{}, income:{ frequency:'biweekly', amount:0 } };
+      showAuthOverlay();
+    }
+  });
+}
+
+function switchAuthTab(mode, btn) {
+  authMode = mode;
+  document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('auth-submit').textContent = mode === 'login' ? 'Sign In' : 'Create Account';
+  document.getElementById('auth-message').textContent = '';
+  document.getElementById('auth-message').className = '';
+}
+
+async function submitAuth() {
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const msgEl    = document.getElementById('auth-message');
+  msgEl.textContent = ''; msgEl.className = '';
+  if (!email || !password) { msgEl.textContent = 'Please enter email and password.'; return; }
+  const btn = document.getElementById('auth-submit');
+  btn.disabled = true; btn.textContent = 'Please wait…';
+  const result = authMode === 'login'
+    ? await supa.auth.signInWithPassword({ email, password })
+    : await supa.auth.signUp({ email, password });
+  btn.disabled = false;
+  btn.textContent = authMode === 'login' ? 'Sign In' : 'Create Account';
+  if (result.error) { msgEl.textContent = result.error.message; }
+  else if (authMode === 'signup' && !result.data.session) {
+    msgEl.className = 'success';
+    msgEl.textContent = '✓ Check your email to confirm your account, then sign in!';
+  }
+}
+
+async function logout() { await supa.auth.signOut(); }
+
+async function showApp() {
+  document.getElementById('auth-overlay').style.display = 'none';
+  document.getElementById('user-email').textContent = currentUser.email;
+  await loadData();
+  document.getElementById('f-date').value = todayStr();
+  render();
+}
+
+function showAuthOverlay() {
+  document.getElementById('auth-overlay').style.display = 'flex';
+  document.getElementById('user-email').textContent = '';
+  render();
+}
+
+// ── Supabase data ─────────────────────────────────────────────
+async function loadData() {
+  const uid = currentUser.id;
+  const [txRes, budRes, setRes] = await Promise.all([
+    supa.from('transactions').select('*').eq('user_id', uid).order('date', { ascending: false }),
+    supa.from('budgets').select('*').eq('user_id', uid),
+    supa.from('settings').select('*').eq('user_id', uid).maybeSingle()
+  ]);
+  data.transactions = (txRes.data || []).map(t => ({
+    id: t.id, desc: t.desc, amount: Number(t.amount),
+    type: t.type, category: t.category, date: t.date
+  }));
+  data.budgets = {}; data.notes = {};
+  (budRes.data || []).forEach(b => {
+    data.budgets[b.category] = Number(b.limit_amount);
+    if (b.note) data.notes[b.category] = b.note;
+  });
+  if (setRes.data) {
+    data.income = { frequency: setRes.data.income_frequency, amount: Number(setRes.data.income_amount) };
+  }
+}
+
 // ── Categories ──────────────────────────────────────────────
 const EXP_CATS = [
   { name:'Housing',        icon:'🏠', color:'#3b82f6' },
@@ -794,16 +1007,7 @@ let filter  = 'all';
 let activeTab = 'dashboard';
 let chart   = null;
 
-let data = (() => {
-  try {
-    const s = localStorage.getItem('budgetApp_v2');
-    const d = s ? JSON.parse(s) : { transactions:[], budgets:{}, notes:{} };
-    if (!d.income) d.income = { frequency:'biweekly', amount:0 };
-    return d;
-  } catch { return { transactions:[], budgets:{}, notes:{}, income:{ frequency:'biweekly', amount:0 } }; }
-})();
-
-function save() { localStorage.setItem('budgetApp_v2', JSON.stringify(data)); }
+let data = { transactions:[], budgets:{}, notes:{}, income:{ frequency:'biweekly', amount:0 } };
 
 // ── Utilities ────────────────────────────────────────────────
 function ym(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
@@ -855,7 +1059,8 @@ function changeMonth(dir){
 function setType(t){ selType=t; selCat=''; render(); }
 function pickCat(n){ selCat = selCat===n ? '' : n; render(); }
 
-function addTransaction(){
+async function addTransaction(){
+  if (!currentUser) return;
   const desc   = document.getElementById('f-desc').value.trim();
   const amount = parseFloat(document.getElementById('f-amount').value);
   const date   = document.getElementById('f-date').value;
@@ -863,8 +1068,12 @@ function addTransaction(){
   if(!amount||amount<=0){ alert('Please enter a valid amount.'); return; }
   if(!date)             { alert('Please select a date.'); return; }
   if(!selCat)           { alert('Please select a category.'); return; }
-  data.transactions.unshift({ id:Date.now(), desc, amount, type:selType, category:selCat, date });
-  save();
+  const { data: inserted, error } = await supa.from('transactions')
+    .insert({ user_id: currentUser.id, desc, amount, type: selType, category: selCat, date })
+    .select().single();
+  if (error) { alert('Error saving: ' + error.message); return; }
+  data.transactions.unshift({ id: inserted.id, desc, amount, type: selType, category: selCat, date });
+  data.transactions.sort((a,b) => b.date.localeCompare(a.date));
   document.getElementById('f-desc').value='';
   document.getElementById('f-amount').value='';
   document.getElementById('f-date').value=todayStr();
@@ -879,27 +1088,41 @@ function monthlyIncome(){
   const mult = { weekly:52/12, biweekly:26/12, monthly:1 };
   return amount * (mult[frequency] || 1);
 }
-function setFreq(f){ data.income.frequency=f; save(); render(); }
-function saveIncome(){
+async function setFreq(f){
+  data.income.frequency = f;
+  await supa.from('settings').upsert({ user_id: currentUser.id, income_frequency: f, income_amount: data.income.amount });
+  render();
+}
+async function saveIncome(){
   const val = parseFloat(document.getElementById('inc-amount').value);
   data.income.amount = val > 0 ? val : 0;
-  save(); render();
+  await supa.from('settings').upsert({ user_id: currentUser.id, income_frequency: data.income.frequency, income_amount: data.income.amount });
+  render();
 }
 
-function deleteTx(id){
+async function deleteTx(id){
   if(!confirm('Delete this transaction?')) return;
-  data.transactions=data.transactions.filter(t=>t.id!==id);
-  save(); render();
+  const { error } = await supa.from('transactions').delete().eq('id', id);
+  if (error) { alert('Error deleting: ' + error.message); return; }
+  data.transactions = data.transactions.filter(t => t.id !== id);
+  render();
 }
 
 function setFilter(f){ filter=f; render(); }
 
-function saveBudget(cat){
-  const val=parseFloat(document.getElementById('ginput-'+btoa(cat).replace(/=/g,'')).value);
-  if(val>0) data.budgets[cat]=val; else delete data.budgets[cat];
-  const note=document.getElementById('gnote-'+btoa(cat).replace(/=/g,'')).value.trim();
+async function saveBudget(cat){
+  if (!currentUser) return;
+  const val  = parseFloat(document.getElementById('ginput-'+btoa(cat).replace(/=/g,'')).value);
+  const note = document.getElementById('gnote-'+btoa(cat).replace(/=/g,'')).value.trim();
+  if(val > 0){
+    await supa.from('budgets').upsert({ user_id: currentUser.id, category: cat, limit_amount: val, note: note || '' });
+    data.budgets[cat] = val;
+  } else {
+    await supa.from('budgets').delete().eq('user_id', currentUser.id).eq('category', cat);
+    delete data.budgets[cat];
+  }
   if(note) data.notes[cat]=note; else delete data.notes[cat];
-  save(); render();
+  render();
 }
 
 // ── Render ────────────────────────────────────────────────────
@@ -1043,7 +1266,7 @@ function renderTransactions(){
           </div>
         </div>
         <span class="tx-amt ${t.type==='income'?'i':'e'}">${t.type==='income'?'+':'−'}${fmt(t.amount)}</span>
-        <button class="btn-del" onclick="deleteTx(${t.id})" title="Delete">&#x2715;</button>
+        <button class="btn-del" onclick="deleteTx('${t.id}')" title="Delete">&#x2715;</button>
       </div>`;
   }).join('');
 }
@@ -1148,8 +1371,8 @@ if('serviceWorker' in navigator){
 })();
 
 // ── Init ──────────────────────────────────────────────────────
-document.getElementById('f-date').value = todayStr();
-render();
+render(); // initial render while auth loads
+initAuth();
 </script>
 </body>
 </html>
