@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Budget App</title>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#6366f1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BudgetApp" />
+  <link rel="apple-touch-icon" href="icon.png" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     :root {
@@ -402,8 +409,95 @@
     }
     .gc-note:focus { border-color: var(--primary); color: var(--text); }
 
+    /* ─── Income Settings Card ─── */
+    .income-card {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      border-radius: var(--radius);
+      padding: 1.4rem 1.6rem;
+      color: #fff;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+    }
+    .income-card-top {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; margin-bottom: 1.1rem;
+      flex-wrap: wrap; gap: 1rem;
+    }
+    .income-card-title { font-size: 1rem; font-weight: 700; }
+    .income-card-sub   { font-size: 0.78rem; opacity: 0.75; margin-top: 0.2rem; }
+    .income-monthly-box { text-align: right; }
+    .income-monthly-lbl { font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.06em; }
+    .income-monthly-val { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
+
+    .income-controls {
+      display: grid;
+      grid-template-columns: auto 1fr 2fr;
+      gap: 1.25rem;
+      align-items: end;
+    }
+    .freq-label  { font-size: 0.72rem; opacity: 0.8; margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .freq-toggle { display: flex; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 3px; gap: 2px; }
+    .freq-btn {
+      padding: 0.38rem 0.75rem;
+      border: none; background: transparent; color: rgba(255,255,255,0.7);
+      border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600;
+      transition: all 0.15s;
+    }
+    .freq-btn.active { background: #fff; color: var(--primary); }
+    .freq-btn:hover:not(.active) { color: #fff; background: rgba(255,255,255,0.15); }
+
+    .income-amt-label { font-size: 0.72rem; opacity: 0.8; margin-bottom: 0.35rem; display: block; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .income-amt-input {
+      width: 100%; padding: 0.55rem 0.75rem;
+      background: rgba(255,255,255,0.15);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-radius: 8px; color: #fff;
+      font-size: 0.95rem; font-family: inherit; outline: none;
+      transition: border-color 0.15s;
+    }
+    .income-amt-input::placeholder { color: rgba(255,255,255,0.5); }
+    .income-amt-input:focus { border-color: rgba(255,255,255,0.8); }
+
+    .income-bar-wrap { }
+    .income-bar-label {
+      display: flex; justify-content: space-between;
+      font-size: 0.72rem; opacity: 0.85; margin-bottom: 0.35rem;
+    }
+    .income-bar-track {
+      height: 10px; background: rgba(0,0,0,0.2);
+      border-radius: 5px; overflow: hidden; margin-bottom: 0.4rem;
+    }
+    .income-bar-fill { height: 100%; border-radius: 5px; transition: width 0.4s ease; background: #fff; }
+    .income-bar-note { font-size: 0.75rem; opacity: 0.85; }
+
+    /* ─── Dashboard income comparison strip ─── */
+    .income-strip {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 1rem 1.3rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.25rem;
+      display: none;
+    }
+    .income-strip.visible { display: block; }
+    .income-strip-top {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 0.6rem;
+    }
+    .income-strip-title { font-size: 0.82rem; font-weight: 700; }
+    .income-strip-vals  { font-size: 0.78rem; color: var(--muted); }
+    .income-strip-vals strong { color: var(--text); }
+    .income-strip-track {
+      height: 10px; background: #f0f0f0;
+      border-radius: 5px; overflow: hidden; margin-bottom: 0.4rem;
+    }
+    .income-strip-fill { height: 100%; border-radius: 5px; transition: width 0.4s ease; }
+    .income-strip-sub  { font-size: 0.72rem; color: var(--muted); }
+
     /* Responsive */
     @media (max-width: 900px) {
+      .income-controls { grid-template-columns: 1fr 1fr; }
+    }
       .dash-grid       { grid-template-columns: 1fr; }
       .tx-layout       { grid-template-columns: 1fr; }
       .goals-grid      { grid-template-columns: repeat(2, 1fr); }
@@ -461,6 +555,18 @@
         <div class="card-value dark" id="d-balance">$0.00</div>
         <div class="card-sub" id="d-balance-note">—</div>
       </div>
+    </div>
+
+    <!-- Income vs Expenses strip (visible only when income is configured) -->
+    <div class="income-strip" id="income-strip">
+      <div class="income-strip-top">
+        <span class="income-strip-title">💼 Monthly Income vs. Expenses</span>
+        <span class="income-strip-vals"><strong id="strip-exp">$0</strong> spent of <strong id="strip-inc">$0</strong> expected income</span>
+      </div>
+      <div class="income-strip-track">
+        <div class="income-strip-fill" id="strip-fill"></div>
+      </div>
+      <div class="income-strip-sub" id="strip-sub"></div>
     </div>
 
     <!-- Chart + Breakdown -->
@@ -558,10 +664,49 @@
 ══════════════════════════════════════ -->
 <div class="tab-panel" id="tab-goals">
   <div class="page">
+    <!-- Income Settings Card -->
+    <div class="income-card">
+      <div class="income-card-top">
+        <div>
+          <div class="income-card-title">💼 Income Settings</div>
+          <div class="income-card-sub">Set your paycheck amount so expenses can be compared to your income</div>
+        </div>
+        <div class="income-monthly-box">
+          <div class="income-monthly-lbl">Est. Monthly Income</div>
+          <div class="income-monthly-val" id="inc-monthly-val">—</div>
+        </div>
+      </div>
+      <div class="income-controls">
+        <div>
+          <div class="freq-label">Pay Frequency</div>
+          <div class="freq-toggle" id="freq-toggle">
+            <button class="freq-btn" onclick="setFreq('weekly')">Weekly</button>
+            <button class="freq-btn" onclick="setFreq('biweekly')">Biweekly</button>
+            <button class="freq-btn" onclick="setFreq('monthly')">Monthly</button>
+          </div>
+        </div>
+        <div>
+          <label class="income-amt-label" for="inc-amount">Amount per paycheck ($)</label>
+          <input id="inc-amount" class="income-amt-input" type="number" min="0" step="1"
+                 placeholder="e.g. 2500" oninput="saveIncome()" />
+        </div>
+        <div class="income-bar-wrap">
+          <div class="income-bar-label">
+            <span>Expenses vs. Income</span>
+            <span id="inc-pct-label">—</span>
+          </div>
+          <div class="income-bar-track">
+            <div class="income-bar-fill" id="inc-bar-fill" style="width:0%"></div>
+          </div>
+          <div class="income-bar-note" id="inc-bar-note">Enter your income above to see the comparison</div>
+        </div>
+      </div>
+    </div>
+
     <div class="goals-header">
       <div>
-        <h2>Monthly Budget Goals</h2>
-        <p>Set spending limits for each category. Goals reset each month.</p>
+        <h2>Monthly Spending Limits</h2>
+        <p>Set a limit for each category. Save individually or update anytime.</p>
       </div>
     </div>
 
@@ -629,8 +774,10 @@ let chart   = null;
 let data = (() => {
   try {
     const s = localStorage.getItem('budgetApp_v2');
-    return s ? JSON.parse(s) : { transactions:[], budgets:{}, notes:{} };
-  } catch { return { transactions:[], budgets:{}, notes:{} }; }
+    const d = s ? JSON.parse(s) : { transactions:[], budgets:{}, notes:{} };
+    if (!d.income) d.income = { frequency:'biweekly', amount:0 };
+    return d;
+  } catch { return { transactions:[], budgets:{}, notes:{}, income:{ frequency:'biweekly', amount:0 } }; }
 })();
 
 function save() { localStorage.setItem('budgetApp_v2', JSON.stringify(data)); }
@@ -703,6 +850,25 @@ function addTransaction(){
   render();
 }
 
+// ── Income ────────────────────────────────────────────────────
+function monthlyIncome(){
+  if(!data.income?.amount) return 0;
+  const { frequency, amount } = data.income;
+  const mult = { weekly: 52/12, biweekly: 26/12, monthly: 1 };
+  return amount * (mult[frequency] || 1);
+}
+
+function setFreq(f){
+  data.income.frequency = f;
+  save(); render();
+}
+
+function saveIncome(){
+  const val = parseFloat(document.getElementById('inc-amount').value);
+  data.income.amount = val > 0 ? val : 0;
+  save(); render();
+}
+
 function deleteTx(id){
   if(!confirm('Delete this transaction?')) return;
   data.transactions=data.transactions.filter(t=>t.id!==id);
@@ -736,6 +902,26 @@ function renderDashboard(){
   document.getElementById('d-income-count').textContent  = incCount+' transaction'+(incCount!==1?'s':'');
   document.getElementById('d-expense-count').textContent = expCount+' transaction'+(expCount!==1?'s':'');
   document.getElementById('chart-month-pill').textContent = monthLabel(currentMonth);
+
+  // Income vs expenses strip
+  const mi = monthlyIncome();
+  const strip = document.getElementById('income-strip');
+  if(mi > 0){
+    strip.classList.add('visible');
+    const pct = Math.min((exp / mi) * 100, 100);
+    const remaining = mi - exp;
+    const over = exp > mi;
+    const barColor = pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#10b981';
+    document.getElementById('strip-exp').textContent   = fmt(exp);
+    document.getElementById('strip-inc').textContent   = fmt(mi);
+    document.getElementById('strip-fill').style.width  = pct + '%';
+    document.getElementById('strip-fill').style.background = barColor;
+    document.getElementById('strip-sub').textContent   = over
+      ? `⚠️ You are ${fmt(Math.abs(remaining))} over your monthly income`
+      : `✓ ${fmt(remaining)} remaining — ${Math.round(pct)}% of income used`;
+  } else {
+    strip.classList.remove('visible');
+  }
 
   const balEl = document.getElementById('d-balance');
   balEl.textContent = (bal<0?'-':'')+fmt(bal);
@@ -870,6 +1056,42 @@ function renderTransactions(){
 
 // Goals
 function renderGoals(){
+  // Populate income card
+  const { frequency, amount } = data.income;
+  const mi = monthlyIncome();
+
+  // Frequency buttons
+  document.querySelectorAll('.freq-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.toLowerCase() === frequency);
+  });
+
+  // Amount input (only set if not focused)
+  const amtEl = document.getElementById('inc-amount');
+  if(document.activeElement !== amtEl)
+    amtEl.value = amount > 0 ? amount : '';
+
+  // Monthly total
+  document.getElementById('inc-monthly-val').textContent = mi > 0 ? fmt(mi) : '—';
+
+  // Income bar
+  const spend = catSpend();
+  const totalSpent = Object.values(spend).reduce((s,v)=>s+v,0);
+  if(mi > 0){
+    const pct = Math.min((totalSpent / mi) * 100, 100);
+    const over = totalSpent > mi;
+    const barColor = pct > 90 ? '#ef4444' : pct > 70 ? '#f59e0b' : '#fff';
+    document.getElementById('inc-bar-fill').style.width      = pct + '%';
+    document.getElementById('inc-bar-fill').style.background = barColor;
+    document.getElementById('inc-pct-label').textContent     = Math.round(pct) + '% used';
+    document.getElementById('inc-bar-note').textContent      = over
+      ? `⚠️ Expenses exceed income by ${fmt(totalSpent - mi)}`
+      : `${fmt(mi - totalSpent)} left from income this month`;
+  } else {
+    document.getElementById('inc-bar-fill').style.width  = '0%';
+    document.getElementById('inc-pct-label').textContent = '—';
+    document.getElementById('inc-bar-note').textContent  = 'Enter your income above to see the comparison';
+  }
+
   const spend = catSpend();
   const totalBudgeted = EXP_CATS.reduce((s,c)=>s+(data.budgets[c.name]||0),0);
   const totalSpent    = Object.values(spend).reduce((s,v)=>s+v,0);
@@ -928,6 +1150,36 @@ function renderGoals(){
       </div>`;
   }).join('');
 }
+
+// ── PWA: register service worker ─────────────────────────────
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// ── Generate app icon via canvas ──────────────────────────────
+(function generateIcon(){
+  const c = document.createElement('canvas');
+  c.width = c.height = 192;
+  const ctx = c.getContext('2d');
+  const r = 42;
+  ctx.beginPath();
+  ctx.moveTo(r,0); ctx.lineTo(192-r,0);
+  ctx.quadraticCurveTo(192,0,192,r);
+  ctx.lineTo(192,192-r);
+  ctx.quadraticCurveTo(192,192,192-r,192);
+  ctx.lineTo(r,192); ctx.quadraticCurveTo(0,192,0,192-r);
+  ctx.lineTo(0,r); ctx.quadraticCurveTo(0,0,r,0);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0,0,192,192);
+  grad.addColorStop(0,'#6366f1'); grad.addColorStop(1,'#4f46e5');
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.font = '110px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('💰', 96, 105);
+  const link = document.querySelector('link[rel="apple-touch-icon"]');
+  if(link) link.href = c.toDataURL('image/png');
+})();
 
 // ── Init ─────────────────────────────────────────────────────
 document.getElementById('f-date').value = todayStr();
