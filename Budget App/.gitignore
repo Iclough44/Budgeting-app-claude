@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.env
+
+# Build output
+dist/
+build/
+.next/
+
+# OS files
+.DS_Store
+desktop.ini
+Thumbs.db
+
+# Logs
+*.log
+debug.log
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
